@@ -399,9 +399,5 @@ function canDisplayGraphiQL(
  * exists (express), otherwise use response.end (connect).
  */
 function sendResponse(response: Response, data: string): void {
-  if (typeof response.send === 'function') {
-    response.send(data);
-  } else {
-    response.end(data);
-  }
+  response.end(data);
 }
