@@ -1,4 +1,10 @@
-/* @flow */
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -8,25 +14,41 @@
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-import contentType from 'content-type';
-import getBody from 'raw-body';
-import httpError from 'http-errors';
-import querystring from 'querystring';
-import zlib from 'zlib';
+exports.parseBody = parseBody;
 
-import type { Request } from './index';
+var _contentType = require('content-type');
+
+var _contentType2 = _interopRequireDefault(_contentType);
+
+var _rawBody = require('raw-body');
+
+var _rawBody2 = _interopRequireDefault(_rawBody);
+
+var _httpErrors = require('http-errors');
+
+var _httpErrors2 = _interopRequireDefault(_httpErrors);
+
+var _querystring = require('querystring');
+
+var _querystring2 = _interopRequireDefault(_querystring);
+
+var _zlib = require('zlib');
+
+var _zlib2 = _interopRequireDefault(_zlib);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
  * Provided a "Request" provided by express or connect (typically a node style
  * HTTPClientRequest), Promise the body data contained.
  */
-export function parseBody(req: Request): Promise<{[param: string]: mixed}> {
-  return new Promise((resolve, reject) => {
-    const body = req.body;
+function parseBody(req) {
+  return new Promise(function (resolve, reject) {
+    var body = req.body;
 
     // If express has already parsed a body as a keyed object, use it.
-    if (typeof body === 'object' && !(body instanceof Buffer)) {
-      return resolve((body: any));
+    if ((typeof body === 'undefined' ? 'undefined' : _typeof(body)) === 'object' && !(body instanceof Buffer)) {
+      return resolve(body);
     }
 
     // Skip requests without content types.
@@ -34,7 +56,7 @@ export function parseBody(req: Request): Promise<{[param: string]: mixed}> {
       return resolve({});
     }
 
-    const typeInfo = contentType.parse(req);
+    var typeInfo = _contentType2.default.parse(req);
 
     // If express has already parsed a body as a string, and the content-type
     // was application/graphql, parse the string body.
@@ -67,16 +89,16 @@ function jsonEncodedParser(body) {
     /* eslint-disable no-empty */
     try {
       return JSON.parse(body);
-    } catch (error) {
-      // Do nothing
-    }
+    } catch (error) {}
+    // Do nothing
+
     /* eslint-enable no-empty */
   }
-  throw httpError(400, 'POST body sent invalid JSON.');
+  throw (0, _httpErrors2.default)(400, 'POST body sent invalid JSON.');
 }
 
 function urlEncodedParser(body) {
-  return querystring.parse(body);
+  return _querystring2.default.parse(body);
 }
 
 function graphqlParser(body) {
@@ -92,34 +114,28 @@ function graphqlParser(body) {
  *     x0A  Line feed or New line
  *     x0D  Carriage return
  */
-const jsonObjRegex = /^[\x20\x09\x0a\x0d]*\{/;
+var jsonObjRegex = /^[\x20\x09\x0a\x0d]*\{/;
 
 // Read and parse a request body.
 function read(req, typeInfo, parseFn, resolve, reject) {
-  const charset = (typeInfo.parameters.charset || 'utf-8').toLowerCase();
+  var charset = (typeInfo.parameters.charset || 'utf-8').toLowerCase();
 
   // Assert charset encoding per JSON RFC 7159 sec 8.1
   if (charset.slice(0, 4) !== 'utf-') {
-    throw httpError(415, `Unsupported charset "${charset.toUpperCase()}".`);
+    throw (0, _httpErrors2.default)(415, 'Unsupported charset "' + charset.toUpperCase() + '".');
   }
 
   // Get content-encoding (e.g. gzip)
-  const contentEncoding = req.headers['content-encoding'];
-  const encoding = typeof contentEncoding === 'string' ?
-    contentEncoding.toLowerCase() :
-    'identity';
-  const length = encoding === 'identity' ? req.headers['content-length'] : null;
-  const limit = 100 * 1024; // 100kb
-  const stream = decompressed(req, encoding);
+  var contentEncoding = req.headers['content-encoding'];
+  var encoding = typeof contentEncoding === 'string' ? contentEncoding.toLowerCase() : 'identity';
+  var length = encoding === 'identity' ? req.headers['content-length'] : null;
+  var limit = 100 * 1024; // 100kb
+  var stream = decompressed(req, encoding);
 
   // Read body from stream.
-  getBody(stream, { encoding: charset, length, limit }, (err, body) => {
+  (0, _rawBody2.default)(stream, { encoding: charset, length: length, limit: limit }, function (err, body) {
     if (err) {
-      return reject(
-        err.type === 'encoding.unsupported' ?
-          httpError(415, `Unsupported charset "${charset.toUpperCase()}".`) :
-          httpError(400, `Invalid body: ${err.message}.`)
-      );
+      return reject(err.type === 'encoding.unsupported' ? (0, _httpErrors2.default)(415, 'Unsupported charset "' + charset.toUpperCase() + '".') : (0, _httpErrors2.default)(400, 'Invalid body: ' + err.message + '.'));
     }
 
     try {
@@ -134,9 +150,12 @@ function read(req, typeInfo, parseFn, resolve, reject) {
 // Return a decompressed stream, given an encoding.
 function decompressed(req, encoding) {
   switch (encoding) {
-    case 'identity': return req;
-    case 'deflate': return req.pipe(zlib.createInflate());
-    case 'gzip': return req.pipe(zlib.createGunzip());
+    case 'identity':
+      return req;
+    case 'deflate':
+      return req.pipe(_zlib2.default.createInflate());
+    case 'gzip':
+      return req.pipe(_zlib2.default.createGunzip());
   }
-  throw httpError(415, `Unsupported content-encoding "${encoding}".`);
+  throw (0, _httpErrors2.default)(415, 'Unsupported content-encoding "' + encoding + '".');
 }
